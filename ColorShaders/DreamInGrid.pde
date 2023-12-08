@@ -1,6 +1,7 @@
 import controlP5.*;
 import ddf.minim.*;
 import ddf.minim.analysis.*;
+import spout.*;
 
 Minim minim;
 AudioInput input;
@@ -21,6 +22,10 @@ PGraphics wave;
 int idxShader = -1;
 
 static boolean SHOW_GUI = false; //GUI doesnt do anything at the moment, and actually disables some shader parameters' randomisation, so leave this as false. 
+
+// DECLARE A SPOUT OBJECT
+Spout spout;
+static boolean SPOUT_ENABLE = true;
 
 void setup() 
 {
@@ -62,6 +67,12 @@ void setup()
     println(shaders.get(i).path);
   }
   println(" ");
+  
+  if(SPOUT_ENABLE){
+    // CREATE A NEW SPOUT OBJECT
+    spout = new Spout(this);
+    spout.setSenderName("DreamInGrid Spout Sender");
+  }
 }
 
 void draw() 
@@ -71,8 +82,10 @@ void draw()
     randTime = 1000;
   }
   
+  //Run beat detection on this frame's audio buffer
   beat.detect(input.mix);
   
+  //Make sure the shader index is within the range of the array size, and check if its time to pick a new shader
   shaderIndex = wrap(shaderIndex, 0, shaders.size()-1);
   if(((millis()-subTime) > randTime) && randomize) {
     subTime = millis();
@@ -80,33 +93,40 @@ void draw()
     randTime = random(600,10000);
     println("NEW SHADER TIME!!!... next shader will b chosen in: " + randTime + "ms");
   }
+  //Update which shader is being rendered this frame
   setShader(shaderIndex);
   
   background(0);
   
-  if( beat.isKick() ) {
-    shader.setShaderParameters(random(250.0,750.0));
-    //println("KICK :D moving foward in time.....");
-  } else {
-    shader.setShaderParameters(0);
-  }
-  
+  //Randomise the current shader's parameters on a HiHat detection 
   if( beat.isHat()){
      shader.setShaderParametersOnHat(); 
      //println("HAT :D RANDOMizing ur shaderz .....");
   }
   
+  //Advance shader time by a random amount on a kick drum detection
+  if( beat.isKick() ) {
+    shader.setShaderParameters(random(250.0,750.0));
+    //println("KICK :D moving foward in time.....");
+  } else {
+    //Update the shader parameters for this frame
+    shader.setShaderParameters(0);
+  }
+  
+  //Draw the shader to a pgraphics buffer
   pg.beginDraw();
   pg.shader(shader.shader);
   pg.rect(0, 0, pg.width, pg.height);
   pg.endDraw();
   
+  //Draw the shader buffer to the canvas
   fill(0);
   rect(0, 0, 480, height);
   image(pg, 0, 0); 
   
   stroke(255);
   
+  //Draw a rectangle over the whole canvas, with a transparency based on how recently a snare drum was detected
   push();
   noStroke();
   float a = map(eRadius, 20, 80, 0, 255);
@@ -118,36 +138,43 @@ void draw()
   if ( eRadius < 20 ) eRadius = 20;
   pop();
 
-  
+  //Draw the waveforms to the waveform' pgraphics buffer so we can see what we are monitoring
   float xOffset = (width/input.bufferSize());
-  // draw the waveforms so we can see what we are monitoring
   wave.beginDraw();
   wave.background(0,0,0,0);
   wave.push();
-  wave.strokeWeight(2);
-  wave.noFill();
-  wave.stroke(255,255,255);
-  float waveformAmplitude = 300;
-  for(int i = 0; i < input.bufferSize() - 1; i++)
-  {
-    float xPos = map(float(i),0,float(input.bufferSize()),float(0),float(width));
-    
-    wave.line( xPos, 
-    waveOffset + input.left.get(i)*waveformAmplitude, 
-    xPos+xOffset, 
-    waveOffset + input.left.get(i+1)*waveformAmplitude );
-    
-    wave.line( xPos, 
-    (height-waveOffset) + input.right.get(i)*waveformAmplitude, 
-    xPos+xOffset, 
-    (height-waveOffset) + 
-    input.right.get(i+1)*waveformAmplitude );
-    
-  }
+    wave.strokeWeight(2);
+    wave.noFill();
+    wave.stroke(255,255,255);
+    float waveformAmplitude = 300;
+    for(int i = 0; i < input.bufferSize() - 1; i++)
+    {
+      float xPos = map(float(i),0,float(input.bufferSize()),float(0),float(width));
+      
+      wave.line( xPos, 
+      waveOffset + input.left.get(i)*waveformAmplitude, 
+      xPos+xOffset, 
+      waveOffset + input.left.get(i+1)*waveformAmplitude );
+      
+      wave.line( xPos, 
+      (height-waveOffset) + input.right.get(i)*waveformAmplitude, 
+      xPos+xOffset, 
+      (height-waveOffset) + 
+      input.right.get(i+1)*waveformAmplitude );
+      
+    }
   wave.pop();
   wave.endDraw();
+  //Draw the wave buffer to the canvas. this is the last thing we draw, so its on top 
   image(wave,0,0);
+  
+  //Send this frame out with Spout
+  if(SPOUT_ENABLE){
+    // Send spout at the size of the window    
+    spout.sendTexture();
+  }
 }
+
 int wrap(int val, int min, int max){
   
   if(val < min){
