@@ -208,6 +208,9 @@ void keyPressed() {
     for(int i = 0; i < 10; i++){
        if(key == char(i+48)){ //0 is at address 48 in ASCII
          println("Switching to shader " + i);
+         if(i == 0){
+           i = 10;
+         }
          shaderIndex = i;
        }
     }
