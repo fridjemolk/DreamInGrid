@@ -3,12 +3,6 @@ void setupShaders()
   GShader newShader;
   shaders = new ArrayList<GShader>();
   
-  // blobby 1
-  newShader = new GShader("blobby.glsl");
-  newShader.addParameter("depth", 0, 2);
-  newShader.addParameter("rate", 0, 2);
-  shaders.add(newShader);
-  
   // drip 2
   newShader = new GShader("drip.glsl");
   newShader.addParameter("intense", 0, 1);
@@ -65,8 +59,19 @@ void setupShaders()
   newShader.addParameter("mouse", 0, width, height*0.4, height);
   shaders.add(newShader);
   
-  //Yasmin's Torus Knot
+  //Yasmin's Butterfly
+  newShader = new GShader("yasmin_butterfly.glsl");
+  newShader.addParameter("mouse", 0, width, height*0.4, height);
+  shaders.add(newShader);
+  
+  //Yasmin's Squid Thing
   newShader = new GShader("yasmin_squid.glsl");
+  shaders.add(newShader);
+  
+  // blobby 1
+  newShader = new GShader("blobby.glsl");
+  newShader.addParameter("depth", 0, 2);
+  newShader.addParameter("rate", 0, 2);
   shaders.add(newShader);
   
 }
